@@ -1,5 +1,5 @@
 ---
-title: "Graph Hacks diary: one dead idea, a night on Reddit, and locks for AI agents"
+title: "Graph Hacks diary: a dropped idea, a night on Reddit, and locks for AI agents"
 published: false
 description: How I threw away my first hackathon project, found a better problem in Reddit comments, and built Interlock, a FalkorDB graph that stops AI agents from colliding in production.
 tags: ai, agents, graphdatabase, hackathon
@@ -10,7 +10,7 @@ cover_image: https://raw.githubusercontent.com/piyushk-dev/interlock/main/docs/s
 
 Graph Hacks started on a Thursday. By Friday night I had a project I was proud of.
 
-It was called Airside. You told it your passport and the visas you held, and it checked flight routes connection by connection. A layover in Frankfurt? Fine for you. A layover in London? You need a transit visa, unless you hold a US one. Every answer came with the rule behind it, pulled from a graph of 3,000 airports and 35,000 routes. It was clean. It was fast. It had a map.
+It was called Airside. You told it your nationality and the visas you held, and it checked flight routes connection by connection. A layover in Frankfurt? Fine for you. A layover in London? You need a transit visa, unless you hold a US one. Every answer came with the rule behind it, pulled from a graph of 3,000 airports and 35,000 routes. It was clean. It was fast. It had a map.
 
 I showed it to a friend. He clicked around for a minute and said one sentence.
 
@@ -24,7 +24,7 @@ So at 11 p.m. on Friday, with two days left, I had a working project and no reas
 
 I did what I should have done first. I stopped thinking about graphs and went to read what people were actually stuck on.
 
-Reddit blocks most scrapers, so I read it the slow way, thread by thread. I had one rule: read the comments, not just the posts. The posts tell you what happened. The comments tell you what hurts.
+Reddit blocks most bots, so I read it the slow way, thread by thread. I had one rule: read the comments, not just the posts. The posts tell you what happened. The comments tell you what hurts.
 
 Around 1 a.m., three threads sat next to each other in my tabs.
 
@@ -36,7 +36,7 @@ Around 1 a.m., three threads sat next to each other in my tabs.
 
 None of these people were asking for a smarter agent. They had smart agents. Their problem was many agents at once, and nobody in charge of them.
 
-Then the picture came together. A large company does not run one agent. It runs dozens: one deploys, one migrates databases, one flips feature flags, one cleans up old data, one is somebody's coding assistant with a production token. Each one is careful. Each one checks its own work. And none of them can see the others.
+Then the picture came together. A large company does not run one agent. It runs dozens: one deploys, one migrates databases, one flips feature flags, one cleans up old data, one is somebody's coding agent with a production token. Each one is careful. Each one checks its own work. And none of them can see the others.
 
 ## The scene I kept picturing
 
@@ -69,7 +69,7 @@ It asks over MCP or plain HTTP, and it gets one of four answers: **granted**, **
 
 ![Interlock graph model](https://raw.githubusercontent.com/piyushk-dev/interlock/main/docs/screens/graph-model.png)
 
-The first query I wrote finds the blast radius. A change to `orders-db` hurts more than `orders-db`; it hurts everything that depends on it. So Interlock walks the dependency edges backwards from the target, one to three hops depending on the action:
+The first query I wrote finds the impact zone. A change to `orders-db` hurts more than `orders-db`; it hurts everything that depends on it. So Interlock walks the dependency edges backwards from the target, one to three hops depending on the action:
 
 ```cypher
 MATCH (t:Resource {id: $target})
@@ -78,7 +78,7 @@ WITH t, d, min(length(p)) AS hops
 RETURN t.id AS target, collect({id: d.id, hops: hops, tier: d.tier}) AS zone
 ```
 
-The second query is the one I am proudest of. Every lock manager has the same trap: two agents ask in the same millisecond, both pass the check, and both win. FalkorDB runs each write query atomically, so I made the check and the grant one statement:
+The second query is the one I am proudest of. Every lock manager has the same trap: two agents ask in the same millisecond, both clear the check, and both win. FalkorDB runs each write query atomically, so I made the check and the grant one statement:
 
 ```cypher
 MATCH (n:Intent {id: $id})
@@ -98,7 +98,7 @@ Then came the rules that answer the security team:
 
 - **Who is behind this agent?** Every agent must trace back to a human who can change the owning team's resources, through up to three sub-agents: `(h:Human)-[:AUTHORIZED]->(:Agent)-[:DELEGATED_TO*0..3]->(a)`. A sub-agent spawned by an agent with no authority over payments gets denied.
 - **Deadlocks** are cycles in the waits-on graph: `(a:Agent)-[:WAITS_ON*2..8]->(a)`. Interlock rolls back the less urgent agent.
-- **Crashes**: every lock is a lease. An agent that dies stops sending heartbeats, and its lock expires after 40 seconds.
+- **Crashes**: every lock is a lease. An agent that goes down stops sending heartbeats, and its lock expires after 40 seconds.
 - **Freezes, environment scope and sign-off** for deletes in prod and payment database migrations.
 
 ## Saturday night: the red map
@@ -123,7 +123,7 @@ Without coordination, the fleet looks twice as busy. Most of that work collides.
 
 ## Sunday: the parts nobody puts in the demo
 
-**Docker died.** Docker Desktop crashed on a stale socket and would not start again. FalkorDB is a Redis module, so I downloaded the module and ran it natively in WSL. It took ten minutes, and it never crashed once after that.
+**Docker broke.** Docker Desktop crashed on a stale socket and would not start again. FalkorDB is a Redis module, so I downloaded the module and ran it natively in WSL. It took ten minutes, and it never crashed once after that.
 
 **Cypher surprised me twice.** FalkorDB does not accept a parameter as a path length (`*1..$depth`). The error says "Encountered unhandled type in inlined properties", which took me a while to decode. Now the depth goes into the query text. I also learned to keep `ro_query` for reads only, after a write I had sent through it failed.
 
@@ -135,9 +135,9 @@ Without coordination, the fleet looks twice as busy. Most of that work collides.
 
 ## What I learned
 
-1. **Kill the idea, not the hackathon.** Airside worked. It was also pointless. One honest sentence from a friend saved the weekend.
+1. **Drop the idea, not the hackathon.** Airside worked. It was also pointless. One honest sentence from a friend saved the weekend.
 2. **Read the comments.** The best problem statements on Reddit were never in the posts.
-3. **An explanation beats a verdict.** "Waiting" makes an agent retry blindly. "Waiting for migrator-11, because both changes reach checkout" tells an agent, or a person, what to do.
+3. **An explanation beats a verdict.** "Waiting" makes an agent retry without knowing why. "Waiting for migrator-11, because both changes reach checkout" tells an agent, or a person, what to do.
 4. **A graph database can be a lock manager.** One atomic write query replaced the transaction protocol I thought I would need.
 5. **Policies should read like sentences.** When security asks what the rule is, I can show them the query.
 6. **Show the cost.** A 29.5-second wait is a real trade-off. Judges and users trust numbers that include the bad part.
