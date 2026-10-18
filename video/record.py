@@ -196,7 +196,7 @@ def explainer(step):
 
 
 def sc_problem(ctx):
-    s = site(ctx, "02-problem", 1.22, "#problem", explainer(0))
+    s = site(ctx, "02-problem", 1.22, "#problem .head", explainer(0))
     s.start()
     s.wait_until(s.when("But the dependency graph")); s.page.evaluate("exShow(1)")
     s.wait_until(s.when("If both changes run")); s.page.evaluate("exShow(2)")
@@ -208,7 +208,7 @@ def sc_evidence(ctx):
 
 
 def sc_solution(ctx):
-    s = site(ctx, "04-solution", 1.22, "#problem", explainer(1))
+    s = site(ctx, "04-solution", 1.22, "#problem .head", explainer(1))
     s.start()
     s.wait_until(s.when("Interlock walks the graph")); s.page.evaluate("exShow(3)")
     s.wait_until(s.when("When agent A finishes")); s.page.evaluate("exShow(4)")
@@ -232,6 +232,7 @@ def sc_console(ctx):
 
 
 def sc_why(ctx):
+    fresh_fleet(3, reset=False)
     s = console(ctx, "06-why")
     iid = s.page.evaluate("""() => { const a = (S.state.snapshot.active || []).filter(i => i.status === 'waiting' && i.target.endsWith('@prod'));
                                       return a.length ? a[0].id : null; }""")
@@ -258,17 +259,29 @@ def sc_bench(ctx):
     def grow(s):
         s.page.add_style_tag(content=".seg { transition: width 1400ms cubic-bezier(.2,.7,.2,1); }")
         s.page.evaluate("document.querySelectorAll('.seg').forEach(e => { e.dataset.w = e.style.width; e.style.width = '0'; })")
-    s = site(ctx, "08-bench", 1.25, "#results", grow)
+    s = site(ctx, "08-bench", 1.25, "#results .head", grow)
     s.start()
     s.page.wait_for_timeout(500)
     s.page.evaluate("document.querySelectorAll('.seg').forEach(e => { e.style.width = ''; })")
     s.finish()
 
 
-def sc_policy(ctx):
+def fresh_fleet(secs=8, reset=True):
+    """Restart the fleet with enforcement on and no approvals queued, so the side panels stay readable."""
     api("/api/sim", {"action": "enforce", "enforce": True})
     api("/api/sim", {"action": "auto_approve", "auto": False})
-    time.sleep(4)
+    if reset:
+        api("/api/sim", {"action": "reset", "agents": 24})
+    api("/api/sim", {"action": "start"})
+    end = time.time() + secs
+    while time.time() < end:
+        for p in api("/api/state").get("pending", []):
+            api("/api/approve", {"intent": p["intent"], "human": p.get("approver") or "arjun", "yes": True})
+        time.sleep(1)
+
+
+def sc_policy(ctx):
+    fresh_fleet()
     s = console(ctx, "09-policy")
     s.page.click("#feedTabs button[data-f='denied']")
     s.start()
@@ -282,6 +295,7 @@ def sc_policy(ctx):
 
 
 def sc_deadlock(ctx):
+    fresh_fleet(6)
     s = console(ctx, "10-deadlock")
     s.start()
     s.wait_until(1.0)
@@ -290,10 +304,10 @@ def sc_deadlock(ctx):
 
 
 def sc_graph(ctx):
-    s = site(ctx, "11-graph", 1.15, "#model")
+    s = site(ctx, "11-graph", 1.15, "#model .head")
     s.start()
     s.wait_until(s.when("The impact zone"))
-    s.page.evaluate("""() => { const el = document.querySelector('#how');
+    s.page.evaluate("""() => { const el = document.querySelector("#how .head");
         window.scrollTo({top: el.getBoundingClientRect().top + window.scrollY - 30, behavior: 'smooth'}); }""")
     s.page.wait_for_timeout(900)
     s.page.click("#howSteps button[data-step='1']")
@@ -303,7 +317,7 @@ def sc_graph(ctx):
 
 
 def sc_mcp(ctx):
-    s = site(ctx, "12-mcp", 1.3, "#integrate")
+    s = site(ctx, "12-mcp", 1.3, "#integrate .head")
     s.start()
     s.finish()
 

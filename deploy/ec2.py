@@ -24,10 +24,22 @@ systemctl enable --now docker
 mkdir -p /usr/local/lib/docker/cli-plugins
 curl -fsSL https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
 chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-IP=$(curl -s http://checkip.amazonaws.com)
 git clone {REPO} /opt/interlock
+cat > /usr/local/bin/interlock-update <<'SH'
+#!/bin/bash
+# rebuild when the repo has new commits; the domain follows the instance's public IP
 cd /opt/interlock
-DOMAIN="$IP.sslip.io" docker compose --profile https up -d --build
+IP=$(curl -s http://checkip.amazonaws.com)
+git fetch -q origin main
+if [ "$1" = "--force" ] || [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+  git reset -q --hard origin/main
+  DOMAIN="$IP.sslip.io" docker compose --profile https up -d --build
+fi
+SH
+chmod +x /usr/local/bin/interlock-update
+/usr/local/bin/interlock-update --force
+echo "*/3 * * * * root /usr/local/bin/interlock-update >> /var/log/interlock-update.log 2>&1" > /etc/cron.d/interlock-update
+dnf install -y cronie && systemctl enable --now crond
 """
 
 ec2 = boto3.client("ec2", region_name=REGION)

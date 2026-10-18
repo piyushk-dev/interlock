@@ -21,6 +21,8 @@ app = FastAPI(title="Interlock", version="1.0")
 def boot():
     core.clock.set_speed(float(os.getenv("INTERLOCK_SPEED", "3")))
     fleet.reset(size=int(os.getenv("INTERLOCK_AGENTS", "24")))
+    if os.getenv("INTERLOCK_AUTOSTART", "1") != "0":   # a demo should be moving when someone opens it
+        fleet.start()
 
 
 # ---------------------------------------------------------------- simulation
@@ -175,7 +177,9 @@ def stats():
 
 @app.get("/api/cypher")
 def cypher():
-    return [{"name": n[2:].lower(), "cypher": getattr(core, n).strip()} for n in sorted(dir(core)) if n.startswith("Q_")]
+    def show(q):  # Q_ZONE is a format string; show it the way it runs
+        return q.replace("{{", "{").replace("}}", "}").replace("{depth}", "$depth").strip()
+    return [{"name": n[2:].lower(), "cypher": show(getattr(core, n))} for n in sorted(dir(core)) if n.startswith("Q_")]
 
 
 @app.get("/health")

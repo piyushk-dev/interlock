@@ -171,7 +171,8 @@ td .chain { flex-wrap: nowrap; }
 .count { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 5px; background: var(--muted-bg); color: var(--text-2); font-size: 12px; font-weight: 600; }
 .count.hot { background: var(--appr-bg); color: var(--appr); }
 
-.approvals .body { padding: 6px 16px 12px; }
+.approvals .body { padding: 6px 16px 12px; max-height: 212px; overflow-y: auto; }
+@media (min-width: 981px) { .app { overflow: hidden; } }
 .approval { padding: 10px 0; border-top: 1px solid var(--line); }
 .approval:first-child { border-top: 0; }
 .approval p { margin: 0 0 8px; color: var(--text-2); }
