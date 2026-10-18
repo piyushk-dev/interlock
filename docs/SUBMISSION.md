@@ -1,6 +1,6 @@
 # Graph Hacks submission: Interlock
 
-Paste these into the form. Replace the three links once the repo, the video and the deployment exist.
+Paste these into the form. The repo, video and live demo links below are final.
 
 ## Project title
 
@@ -27,7 +27,7 @@ https://github.com/piyushk-dev/interlock
 
 ## Demo video
 
-(YouTube link; the file is `video/out/interlock-demo.mp4`)
+https://github.com/piyushk-dev/interlock/releases/download/v1.0/interlock-demo.mp4
 
 ## Live demo or deployment
 
