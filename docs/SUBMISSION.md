@@ -23,7 +23,7 @@ In a benchmark with 24 simulated agents over 180 simulated seconds, the fleet wi
 
 ## Repository
 
-https://github.com/piyushk-dev/interlock (after you approve the push)
+https://github.com/piyushk-dev/interlock
 
 ## Demo video
 
@@ -31,7 +31,7 @@ https://github.com/piyushk-dev/interlock (after you approve the push)
 
 ## Live demo or deployment
 
-(after deploy; local setup is in the README)
+https://43.204.238.218.sslip.io (console: /console). Local setup is in the README.
 
 ## How did you use FalkorDB? What technical problems did you solve with it?
 

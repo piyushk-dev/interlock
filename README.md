@@ -4,7 +4,7 @@ Interlock coordinates AI agents that change production. An agent asks Interlock 
 
 ![Interlock product page with the live dependency map](docs/screens/site-desktop-top.png)
 
-- **Live demo:** _add after deploy_
+- **Live demo:** https://43.204.238.218.sslip.io (console at [/console](https://43.204.238.218.sslip.io/console))
 - **Demo video:** _add link_
 - **Tracks:** Agent Memory and Coordination (main), Agents That Act on Connected Data
 - **Built for:** Graph Hacks (WeMakeDevs x FalkorDB), 15 to 18 October 2026

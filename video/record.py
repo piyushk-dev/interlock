@@ -296,11 +296,14 @@ def sc_policy(ctx):
 
 def sc_deadlock(ctx):
     fresh_fleet(6)
+    api("/api/sim", {"action": "pause"})    # hold the rest of the fleet so the deadlock stays on screen
     s = console(ctx, "10-deadlock")
     s.start()
     s.wait_until(1.0)
-    s.page.click("#scn-deadlock")
+    s.page.locator("#scn-deadlock").hover()
+    api("/api/scenario", {"name": "deadlock"})
     s.finish()
+    api("/api/sim", {"action": "start"})
 
 
 def sc_graph(ctx):
