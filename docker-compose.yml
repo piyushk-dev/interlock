@@ -1,0 +1,43 @@
+services:
+  falkordb:
+    image: falkordb/falkordb:v4.22.1
+    restart: unless-stopped
+    volumes:
+      - falkordb-data:/var/lib/falkordb/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      falkordb:
+        condition: service_healthy
+    environment:
+      FALKORDB_HOST: falkordb
+      FALKORDB_PORT: "6379"
+      INTERLOCK_AGENTS: ${INTERLOCK_AGENTS:-24}
+      INTERLOCK_SPEED: ${INTERLOCK_SPEED:-3}
+    ports:
+      - "8000:8000"
+
+  # Optional HTTPS in front of the app: set DOMAIN (for example 13.233.1.2.sslip.io) and run with --profile https
+  caddy:
+    image: caddy:2.10
+    profiles: ["https"]
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+
+volumes:
+  falkordb-data:
+  caddy-data:

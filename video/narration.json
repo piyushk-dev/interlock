@@ -1,0 +1,15 @@
+[
+  {"id": "01-title", "say": "This is Interlock. It coordinates AI agents that change production systems, and it runs on a FalkorDB graph."},
+  {"id": "02-problem", "say": "Companies now run many agents at the same time. Agent A migrates the orders database. Agent B deploys the payments service. The two tasks look unrelated. But the dependency graph shows a link: both changes reach checkout, and customers use checkout. If both changes run together, checkout fails. The logs show two changes, and nobody can say which one caused the failure."},
+  {"id": "03-evidence", "say": "Engineers report this on Reddit. An agent deleted a production database. Security teams ask who approved a command, and how to prove what it did. A prompt cannot fix this, because one agent cannot see the others."},
+  {"id": "04-solution", "say": "Interlock sits outside the agents. Each agent asks Interlock before it acts. Interlock walks the graph and finds the overlap at checkout, so agent B waits. When agent A finishes, Interlock wakes agent B, and B deploys. Both decisions are stored in the graph."},
+  {"id": "05-console", "say": "This is the live console. Twenty-four agents change a simulated online store. Each card is a service, a database, a topic or a flag. Green cards are changes in progress. Amber cards are inside a change's impact zone. Dashed cards wait for another change. The dark tags show which agent holds each lock."},
+  {"id": "06-why", "say": "Every answer says why. This change waits for another agent. The panel shows its impact zone, the human who authorised the agent, each decision, and the Cypher query behind it."},
+  {"id": "07-off", "say": "Now turn enforcement off. The agents act without asking, and red collisions start within seconds."},
+  {"id": "08-bench", "say": "In our benchmark, one hundred and ninety-seven of two hundred and fifty-five changes collided without Interlock. With Interlock, none did. The cost is an average wait of thirty seconds."},
+  {"id": "09-policy", "say": "Policies live in the graph too. A staging bot tries to delete a production database, and Interlock blocks it. A sub-agent with no human behind it tries to deploy payments, and Interlock blocks that too. A migration of the payments database waits for a human, and Arjun approves it here."},
+  {"id": "10-deadlock", "say": "Here, two agents each hold one resource and wait for the other's. Interlock finds the cycle in the waits-on graph and rolls back the less urgent agent."},
+  {"id": "11-graph", "say": "Everything is one FalkorDB graph: resources and their dependencies, teams, people, agents, intents and decisions. The impact zone is a reverse walk over depends-on edges. One Cypher write checks for conflicts and takes the lock atomically, so two agents can never both win. The audit trail is the same graph."},
+  {"id": "12-mcp", "say": "Any agent can use Interlock over MCP or plain HTTP. Claude Code asks before it deploys, waits when it must, and releases the lock when it is done."},
+  {"id": "13-end", "say": "That is Interlock, built on FalkorDB for Graph Hacks. Thank you for watching."}
+]

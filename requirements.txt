@@ -1,0 +1,5 @@
+falkordb==1.8.0
+fastapi==0.143.3
+uvicorn[standard]==0.54.0
+python-dotenv==1.2.4
+mcp==2.3.0

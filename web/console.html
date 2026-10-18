@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interlock: safe parallel changes for AI agents</title>
+<meta name="description" content="Graph-aware locks, policy gates and an audit trail that let a fleet of AI agents change production at the same time without colliding.">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111827'/%3E%3Ccircle cx='12' cy='16' r='6' fill='none' stroke='%2312b76a' stroke-width='3'/%3E%3Ccircle cx='20' cy='16' r='6' fill='none' stroke='%23f79009' stroke-width='3'/%3E%3C/svg%3E">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <a class="brand" href="/" title="Interlock home">
+      <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#111827"/><circle cx="12" cy="16" r="6" fill="none" stroke="#12b76a" stroke-width="3"/><circle cx="20" cy="16" r="6" fill="none" stroke="#f79009" stroke-width="3"/></svg>
+      Interlock
+    </a>
+    <div class="crumb">Acme Commerce <span aria-hidden="true">/</span> <b>Production</b> <span class="env">Live</span></div>
+    <div class="spacer"></div>
+    <label class="switch" title="When off, agents act without asking. Use it to see what Interlock prevents.">
+      <input type="checkbox" id="enforce" checked>
+      <span class="track"></span><span class="lbl">Enforcement</span><span class="state" id="enforceState">On</span>
+    </label>
+    <label class="field">Agents
+      <select id="fleet"><option>8</option><option>16</option><option selected>24</option><option>32</option><option>48</option></select>
+    </label>
+    <label class="field">Speed
+      <select id="speed"><option value="1">1x</option><option value="2">2x</option><option value="3" selected>3x</option><option value="5">5x</option></select>
+    </label>
+    <button class="btn" id="run" type="button">Start fleet</button>
+    <button class="btn secondary" id="reset" type="button">Reset</button>
+  </header>
+
+  <section class="stats" id="stats" aria-label="Fleet statistics" aria-live="polite"></section>
+
+  <div class="work">
+    <section class="panel map" aria-label="Production">
+      <header>
+        <div class="tabs views" role="tablist" aria-label="Views">
+          <button role="tab" aria-selected="true" data-view="map">Dependency map</button>
+          <button role="tab" aria-selected="false" data-view="agents">Agents</button>
+          <button role="tab" aria-selected="false" data-view="changes">Changes</button>
+          <button role="tab" aria-selected="false" data-view="policies">Policies</button>
+        </div>
+        <div class="right"><span class="meta" id="inflight"></span></div>
+      </header>
+      <div class="view" id="view-map">
+        <div class="map-wrap"><div id="mimic"></div></div>
+        <div class="legend">
+          <span class="k"><svg width="18" height="12"><rect x=".5" y=".5" width="17" height="11" rx="3" fill="#079455" stroke="#067647"/></svg>Being changed</span>
+          <span class="k"><svg width="18" height="12"><rect x=".5" y=".5" width="17" height="11" rx="3" fill="#fffaeb" stroke="#fdb022"/></svg>In a change's impact zone</span>
+          <span class="k"><svg width="18" height="12"><rect x=".8" y=".8" width="16.4" height="10.4" rx="3" fill="#fff" stroke="#f79009" stroke-width="1.6" stroke-dasharray="4 2.5"/></svg>Waiting its turn</span>
+          <span class="k"><svg width="18" height="12"><rect x=".8" y=".8" width="16.4" height="10.4" rx="3" fill="#f4f3ff" stroke="#7a5af8" stroke-width="1.6"/></svg>Needs a human</span>
+          <span class="k"><svg width="18" height="12"><rect x=".5" y=".5" width="17" height="11" rx="3" fill="#d92d20" stroke="#b42318"/></svg>Collision</span>
+          <span class="k"><svg width="30" height="12"><rect x=".5" y="1" width="29" height="10" rx="3" fill="#101828"/><circle cx="6" cy="6" r="2" fill="#32d583"/></svg>Agent</span>
+          <span class="k"><svg width="8" height="8"><circle cx="4" cy="4" r="3" fill="#f04438"/></svg>Customer-facing</span>
+        </div>
+      </div>
+      <div class="view table-view" id="view-agents" hidden></div>
+      <div class="view table-view" id="view-changes" hidden></div>
+      <div class="view table-view" id="view-policies" hidden></div>
+    </section>
+
+    <aside class="side">
+      <section class="panel approvals" aria-label="Approvals">
+        <header><h2>Approvals</h2><span class="count" id="apprCount">0</span>
+          <div class="right"><label class="check"><input type="checkbox" id="auto"> Auto-approve</label></div></header>
+        <div class="body" id="approvals"></div>
+      </section>
+      <section class="panel scenarios" aria-label="Scenarios">
+        <header><h2>Scenarios</h2><span class="meta">Stage a real situation</span></header>
+        <div class="body" id="scenarios"></div>
+      </section>
+      <section class="panel feed" aria-label="Decisions">
+        <header><h2>Decisions</h2>
+          <div class="tabs" role="tablist" aria-label="Filter decisions" id="feedTabs">
+            <button role="tab" aria-selected="true" data-f="all">All</button>
+            <button role="tab" aria-selected="false" data-f="waiting">Waits</button>
+            <button role="tab" aria-selected="false" data-f="denied">Blocked</button>
+            <button role="tab" aria-selected="false" data-f="collision">Collisions</button>
+          </div></header>
+        <ol class="rows" id="rows"></ol>
+      </section>
+    </aside>
+  </div>
+</div>
+<div class="scrim" id="scrim" hidden></div>
+<aside class="sheet" id="sheet" hidden aria-live="polite"></aside>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Interlock film cards</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --text: #101828; --text-2: #475467; --text-3: #667085; --line: #e4e7ec; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: "IBM Plex Sans", system-ui, sans-serif; color: var(--text); -webkit-font-smoothing: antialiased;
+         background: #fff radial-gradient(#e4e7ec 1.2px, transparent 1.2px) 0 0 / 24px 24px; }
+  .card { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; }
+  .card.on { display: flex; }
+  .in { opacity: 0; transform: translateY(18px); transition: opacity 700ms ease, transform 700ms ease; }
+  .in.show { opacity: 1; transform: none; }
+
+  /* title */
+  .title { text-align: center; }
+  .title .logo { display: inline-flex; align-items: center; gap: 22px; font-size: 104px; font-weight: 600; letter-spacing: -3px; }
+  .title p { font-size: 34px; color: var(--text-2); margin: 22px 0 0; }
+  .title .by { font-size: 22px; color: var(--text-3); margin-top: 40px; }
+  .graph { margin: 0 auto 44px; display: block; }
+  .graph path { fill: none; stroke: #c7ccd4; stroke-width: 2; stroke-dasharray: 220; stroke-dashoffset: 220; transition: stroke-dashoffset 1400ms ease; }
+  .graph.show path { stroke-dashoffset: 0; }
+  .graph rect { fill: #fff; stroke: #d0d5dd; stroke-width: 1.5; }
+  .graph .g rect { fill: #079455; stroke: #067647; }
+  .graph .w rect { stroke: #f79009; stroke-dasharray: 6 4; stroke-width: 2; }
+
+  /* quotes */
+  .quotes { width: 1320px; }
+  .quotes h2 { font-size: 30px; font-weight: 500; color: var(--text-3); margin: 0 0 40px; }
+  .q { display: grid; grid-template-columns: 280px 1fr; gap: 40px; padding: 30px 0; border-top: 2px solid var(--text); align-items: baseline; }
+  .q:last-child { border-bottom: 1px solid var(--line); }
+  .q span { font: 500 22px "IBM Plex Mono", monospace; color: var(--text-2); }
+  .q b { font-size: 46px; line-height: 1.2; font-weight: 500; letter-spacing: -0.8px; }
+
+  /* end */
+  .end { text-align: center; }
+  .end .logo { display: inline-flex; align-items: center; gap: 20px; font-size: 88px; font-weight: 600; letter-spacing: -2.5px; }
+  .end p { font-size: 30px; color: var(--text-2); margin: 20px 0 0; }
+  .end .url { font: 500 30px "IBM Plex Mono", monospace; color: var(--text); margin-top: 44px; padding: 14px 26px; border: 1px solid var(--line); border-radius: 10px; display: inline-block; background: #fff; }
+</style>
+</head>
+<body>
+<section class="card" id="title">
+  <div class="title">
+    <svg class="graph in" width="620" height="150" viewBox="0 0 620 150" aria-hidden="true">
+      <path d="M110 75 C 170 75, 170 30, 230 30"/><path d="M110 75 C 170 75, 170 120, 230 120"/>
+      <path d="M330 30 H 400"/><path d="M330 120 H 400"/>
+      <g><rect x="10" y="57" width="100" height="36" rx="8"/></g>
+      <g class="g"><rect x="230" y="12" width="100" height="36" rx="8"/></g>
+      <g class="w"><rect x="230" y="102" width="100" height="36" rx="8"/></g>
+      <g><rect x="400" y="12" width="120" height="36" rx="8"/></g>
+      <g><rect x="400" y="102" width="120" height="36" rx="8"/></g>
+    </svg>
+    <div class="logo in"><svg width="92" height="92" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#111827"/><circle cx="12" cy="16" r="6" fill="none" stroke="#12b76a" stroke-width="3"/><circle cx="20" cy="16" r="6" fill="none" stroke="#f79009" stroke-width="3"/></svg>Interlock</div>
+    <p class="in">Coordination for AI agents that change production</p>
+    <p class="by in">Built on FalkorDB for Graph Hacks 2026</p>
+  </div>
+</section>
+
+<section class="card" id="quotes">
+  <div class="quotes">
+    <h2 class="in">From Reddit, 2026</h2>
+    <div class="q in"><span>r/LocalLLM</span><b>"An AI agent deleted our production database."</b></div>
+    <div class="q in"><span>r/devops</span><b>"Who approved the command, how do you prove what it did."</b></div>
+    <div class="q in"><span>r/ClaudeAI</span><b>"Agents working at cross-purposes."</b></div>
+  </div>
+</section>
+
+<section class="card" id="end">
+  <div class="end">
+    <div class="logo in"><svg width="80" height="80" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#111827"/><circle cx="12" cy="16" r="6" fill="none" stroke="#12b76a" stroke-width="3"/><circle cx="20" cy="16" r="6" fill="none" stroke="#f79009" stroke-width="3"/></svg>Interlock</div>
+    <p class="in">Locks, approvals and an audit trail for AI agents, in one FalkorDB graph</p>
+    <div class="url in">github.com/piyushk-dev/interlock</div>
+  </div>
+</section>
+<script>
+  // play(card, [delays in ms for each .in element])
+  window.play = (id, gaps) => {
+    document.querySelectorAll(".card").forEach((c) => c.classList.toggle("on", c.id === id));
+    const els = [...document.querySelectorAll(`#${id} .in`)];
+    els.forEach((el, i) => setTimeout(() => el.classList.add("show"), (gaps && gaps[i]) ?? 150 + i * 350));
+  };
+</script>
+</body>
+</html>

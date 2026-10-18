@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interlock</title>
+<meta name="description" content="Interlock checks each AI agent action against a FalkorDB dependency graph before it runs. Changes that would collide wait, risky changes go to a human, and each decision is recorded.">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/site.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111827'/%3E%3Ccircle cx='12' cy='16' r='6' fill='none' stroke='%2312b76a' stroke-width='3'/%3E%3Ccircle cx='20' cy='16' r='6' fill='none' stroke='%23f79009' stroke-width='3'/%3E%3C/svg%3E">
+</head>
+<body>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="/"><svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#111827"/><circle cx="12" cy="16" r="6" fill="none" stroke="#12b76a" stroke-width="3"/><circle cx="20" cy="16" r="6" fill="none" stroke="#f79009" stroke-width="3"/></svg>Interlock</a>
+    <nav aria-label="Sections"><a href="#problem">Problem</a><a href="#scenarios">Scenarios</a><a href="#results">Benchmark</a><a href="#how">How it works</a><a href="#model">Graph model</a><a href="#integrate">Integrate</a></nav>
+    <div class="right">
+      <a class="btn ghost small" href="https://github.com/piyushk-dev/interlock">GitHub</a>
+      <a class="btn small" href="/console">Open console</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-head">
+        <h1>Interlock coordinates AI agents that change production.</h1>
+        <div class="hero-side">
+          <p class="sub">An agent asks Interlock before it changes anything. Interlock finds every service the change can affect. If another change already affects them, the new change waits. If the change is risky, a human must approve it. Interlock records each decision.</p>
+          <div class="ctas">
+            <a class="btn" href="/console">Open the console</a>
+            <a class="btn ghost" href="#problem">See the problem</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="stage-wrap">
+      <div class="window" aria-label="Live demo">
+        <div class="bar">
+          <span class="live">Live</span>
+          <span class="where">Acme Commerce production. 24 simulated agents ask Interlock before each change.</span>
+          <a href="/console">Full console</a>
+        </div>
+        <iframe class="hero-frame" src="/console?embed=1&amp;feed=1" title="Live dependency map and decisions" loading="eager"></iframe>
+        <div class="readout" aria-live="polite">
+          <div><b id="r-flight">0</b><span>changes running</span></div>
+          <div><b id="r-wait">0</b><span>changes waiting</span></div>
+          <div><b id="r-prev">0</b><span>collisions prevented</span></div>
+          <div><b id="r-block">0</b><span>blocked by policy</span></div>
+          <div><b id="r-done">0</b><span>changes completed</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="problem">
+    <div class="wrap">
+      <div class="head">
+        <h2>The problem</h2>
+        <p class="lead">Companies run many agents at the same time. Each agent knows only its own task. Two tasks can look unrelated and still break the same service.</p>
+      </div>
+
+      <div class="explainer" id="explainer">
+        <div class="ex-figure">
+          <svg class="ex" viewBox="0 0 760 330" role="img" aria-labelledby="exCap">
+            <defs><marker id="exArr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#98a2b3"/></marker></defs>
+            <g class="ex-edges">
+              <path data-e="checkout-orders" d="M190 175 C 250 175, 250 105, 300 105" marker-end="url(#exArr)"/>
+              <path data-e="checkout-payments" d="M190 175 C 250 175, 250 245, 300 245" marker-end="url(#exArr)"/>
+              <path data-e="orders-ordersdb" d="M400 105 H 510" marker-end="url(#exArr)"/>
+              <path data-e="payments-paymentsdb" d="M400 245 H 510" marker-end="url(#exArr)"/>
+            </g>
+            <g class="ex-node" data-n="checkout" transform="translate(140,175)"><rect x="-50" y="-17" width="100" height="34" rx="8"/><text y="5">checkout</text><circle class="t1" cx="49" cy="-16" r="4.5"/></g>
+            <g class="ex-node" data-n="orders" transform="translate(350,105)"><rect x="-50" y="-17" width="100" height="34" rx="8"/><text y="5">orders</text></g>
+            <g class="ex-node" data-n="payments" transform="translate(350,245)"><rect x="-50" y="-17" width="100" height="34" rx="8"/><text y="5">payments</text></g>
+            <g class="ex-node" data-n="ordersdb" transform="translate(570,105)"><rect x="-60" y="-17" width="120" height="34" rx="8"/><text y="5">orders-db</text></g>
+            <g class="ex-node" data-n="paymentsdb" transform="translate(570,245)"><rect x="-60" y="-17" width="120" height="34" rx="8"/><text y="5">payments-db</text></g>
+            <g class="ex-agent" data-a="A" transform="translate(510,52)"><rect x="0" y="-13" width="190" height="26" rx="5"/><circle cx="13" cy="0" r="3.5"/><text x="24" y="4.5">Agent A: migrate orders-db</text></g>
+            <g class="ex-agent" data-a="B" transform="translate(300,295)"><rect x="0" y="-13" width="186" height="26" rx="5"/><circle cx="13" cy="0" r="3.5"/><text x="24" y="4.5">Agent B: deploy payments</text></g>
+            <g class="ex-note" transform="translate(140,128)"><text y="0">Both changes reach checkout</text></g>
+            <g class="ex-legend" transform="translate(20,22)"><text>Arrows point from a service to what it depends on. The red dot marks a customer-facing service.</text></g>
+          </svg>
+        </div>
+        <div class="ex-side">
+          <ol class="ex-steps" id="exSteps"></ol>
+          <div class="ex-controls">
+            <button class="btn ghost small" type="button" id="exPrev">Back</button>
+            <button class="btn small" type="button" id="exNext">Next</button>
+            <button class="btn ghost small" type="button" id="exPlay">Play</button>
+          </div>
+        </div>
+        <p class="sr-only" id="exCap">Diagram: checkout depends on orders and payments. Orders depends on orders-db. Payments depends on payments-db.</p>
+      </div>
+
+      <div class="quotes">
+        <figure>
+          <blockquote>"An AI agent deleted our production database."</blockquote>
+          <figcaption>r/LocalLLM, May 2026</figcaption>
+          <p class="fix">Interlock: a delete in prod needs a human. An agent scoped to staging cannot reach prod.</p>
+        </figure>
+        <figure>
+          <blockquote>"Who approved the command, how do you prove what it did."</blockquote>
+          <figcaption>r/devops, October 2026</figcaption>
+          <p class="fix">Interlock: each decision is stored before the action runs, with the chain from the agent to the human who authorised it.</p>
+        </figure>
+        <figure>
+          <blockquote>"Merge conflicts, duplicated functions, agents working at cross-purposes."</blockquote>
+          <figcaption>r/ClaudeAI, on running several agents at once</figcaption>
+          <p class="fix">Interlock: two changes that reach the same service cannot run together. The second change waits.</p>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="block soft" id="scenarios">
+    <div class="wrap">
+      <div class="head">
+        <h2>Scenarios you can run</h2>
+        <p class="lead">These buttons change the live system. Select a scenario, run it, then watch the map and the log.</p>
+      </div>
+      <div class="scn-grid">
+        <div class="scn-list" role="tablist" aria-label="Scenarios" id="scnList"></div>
+        <div class="scn-stage">
+          <div class="window">
+            <iframe class="scn-frame" src="/console?embed=1" title="Live dependency map for the scenario" loading="lazy"></iframe>
+          </div>
+          <div class="scn-panel">
+            <div class="scn-text">
+              <h3 id="scnTitle"></h3>
+              <p id="scnWhat"></p>
+            </div>
+            <div class="scn-actions" id="scnActions"></div>
+            <ol class="scn-log" id="scnLog" aria-live="polite"></ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="results">
+    <div class="wrap">
+      <div class="head">
+        <h2>Benchmark: the same fleet with and without Interlock</h2>
+        <p class="lead">24 agents, 40 production resources, 180 simulated seconds, the same random seed. Without Interlock the fleet makes more changes, but most of them collide.</p>
+      </div>
+      <div class="bench" role="img" aria-label="Without Interlock: 255 changes, 58 clean and 197 collided. With Interlock: 107 changes, all clean, and 11 blocked by policy.">
+        <div class="bench-row">
+          <div class="bench-name">Without Interlock<span>255 changes</span></div>
+          <div class="bench-bar">
+            <div class="seg clean l" style="--n:58" title="58 landed cleanly"><span>58</span></div>
+            <div class="seg clash r" style="--n:197" title="197 collided with another change"><span>197 collided</span></div>
+          </div>
+        </div>
+        <div class="bench-row">
+          <div class="bench-name">With Interlock<span>107 changes</span></div>
+          <div class="bench-bar">
+            <div class="seg clean l r" style="--n:107" title="107 landed cleanly"><span>107 clean</span></div>
+            <div class="seg-note">0 collided. 11 more were blocked by policy.</div>
+          </div>
+        </div>
+        <div class="bench-key"><span><i class="k-clean"></i>Landed cleanly</span><span><i class="k-clash"></i>Collided with another change</span></div>
+      </div>
+      <dl class="facts">
+        <div><dt>Collisions on customer-facing services</dt><dd><b class="bad">116</b> without, <b class="good">0</b> with</dd></div>
+        <div><dt>Changes that landed cleanly</dt><dd><b>58</b> without, <b class="good">107</b> with</dd></div>
+        <div><dt>Average wait before a change starts</dt><dd><b>0s</b> without, <b>29.5s</b> with</dd></div>
+      </dl>
+      <p class="note">The wait comes from a strict rule: two changes that reach the same customer-facing service run one after the other. To get these numbers again, run <code>scripts/bench.py</code>. You can also turn Enforcement off in the console.</p>
+    </div>
+  </section>
+
+  <section class="block soft" id="how">
+    <div class="wrap">
+      <div class="head">
+        <h2>How a request is decided</h2>
+        <p class="lead">Services, databases, topics, flags, teams, people and agents are nodes in one FalkorDB graph. Interlock answers each request with graph queries.</p>
+      </div>
+      <div class="how">
+        <div class="how-steps" role="tablist" aria-label="Steps" id="howSteps">
+          <button role="tab" aria-selected="true" data-step="0"><span class="n">1</span><span><b>The agent asks</b>It sends the action and the target over MCP or HTTP.</span></button>
+          <button role="tab" aria-selected="false" data-step="1"><span class="n">2</span><span><b>Interlock finds the impact zone</b>It follows dependency edges back from the target, one to three hops.</span></button>
+          <button role="tab" aria-selected="false" data-step="2"><span class="n">3</span><span><b>One query checks and grants</b>It compares the zone with running changes and takes the lock in one atomic write.</span></button>
+          <button role="tab" aria-selected="false" data-step="3"><span class="n">4</span><span><b>Policies and the record</b>It checks scope, authority, freezes and sign-off, then stores the decision.</span></button>
+        </div>
+        <div class="how-code">
+          <pre class="code" data-step="0"><span class="c"># the agent asks first</span>
+POST /api/request
+{
+  <span class="s">"agent"</span>:  <span class="s">"deployer-03"</span>,
+  <span class="s">"action"</span>: <span class="s">"deploy"</span>,
+  <span class="s">"target"</span>: <span class="s">"payments@prod"</span>,
+  <span class="s">"reason"</span>: <span class="s">"v2.4 rollout"</span>
+}
+
+<span class="c"># the answer says what to do and why</span>
+{
+  <span class="s">"status"</span>: <span class="s">"waiting"</span>,
+  <span class="s">"reason"</span>: <span class="s">"Waits for migrator-11 (migrate orders-db).
+             Both changes reach checkout:
+             orders-db → orders → checkout,
+             and payments → checkout."</span>
+}</pre>
+          <pre class="code" data-step="1" hidden><span class="c">// everything that depends on the target, up to 2 hops away</span>
+<span class="k">MATCH</span> (t:Resource {id: $target})
+<span class="k">OPTIONAL MATCH</span> p = (d:Resource)-[:DEPENDS_ON*1..2]->(t)
+<span class="k">WITH</span> t, d, min(length(p)) <span class="k">AS</span> hops
+<span class="k">RETURN</span> t.id <span class="k">AS</span> target,
+       collect({id: d.id, hops: hops, tier: d.tier}) <span class="k">AS</span> zone
+
+<span class="c">// deploy and migrate: 2 hops. restart: 1. delete: 3.
+// the zone is stored as IMPACTS edges on the Intent node.</span></pre>
+          <pre class="code" data-step="2" hidden><span class="c">// check and grant in one write: two agents cannot both win</span>
+<span class="k">MATCH</span> (n:Intent {id: $id})
+<span class="k">OPTIONAL MATCH</span> (n)-[a:IMPACTS]->(r:Resource)<-[b:IMPACTS]-(g:Intent {status: <span class="s">'granted'</span>})
+<span class="k">WHERE</span> g <> n <span class="k">AND</span> (
+      (a.role = <span class="s">'target'</span> <span class="k">AND</span> n.mode = <span class="s">'exclusive'</span>)
+   <span class="k">OR</span> (b.role = <span class="s">'target'</span> <span class="k">AND</span> g.mode = <span class="s">'exclusive'</span>)
+   <span class="k">OR</span> (r.tier = 1 <span class="k">AND</span> n.mode = <span class="s">'exclusive'</span> <span class="k">AND</span> g.mode = <span class="s">'exclusive'</span>))
+<span class="k">WITH</span> n, collect(<span class="k">DISTINCT</span> g) <span class="k">AS</span> blockers
+<span class="k">SET</span> n.status = <span class="k">CASE WHEN</span> size(blockers) = 0 <span class="k">THEN</span> <span class="s">'granted'</span> <span class="k">ELSE</span> <span class="s">'waiting'</span> <span class="k">END</span>
+<span class="k">FOREACH</span> (g <span class="k">IN</span> blockers | <span class="k">MERGE</span> (n)-[:WAITS_FOR]->(g))</pre>
+          <pre class="code" data-step="3" hidden><span class="c">// is a human behind this agent, through any sub-agents?</span>
+<span class="k">MATCH</span> (a:Agent {id: $agent}), (r:Resource {id: $target})-[:OWNED_BY]->(team:Team)
+<span class="k">OPTIONAL MATCH</span> (h:Human)-[:AUTHORIZED]->(top:Agent)-[d:DELEGATED_TO*0..3]->(a)
+<span class="k">WHERE</span> (h)-[:CAN_CHANGE]->(team)
+<span class="k">RETURN</span> h.name, [x <span class="k">IN</span> nodes(d) | x.name] <span class="k">AS</span> chain
+
+<span class="c">// agents that wait on each other in a circle</span>
+<span class="k">MATCH</span> p = (a:Agent)-[:WAITS_ON*2..8]->(a)
+<span class="k">RETURN</span> [x <span class="k">IN</span> nodes(p) | x.id] <span class="k">AS</span> cycle <span class="k">LIMIT</span> 1
+
+<span class="c">// the record, written before the action runs</span>
+<span class="k">MATCH</span> (n:Intent {id: $iid})
+<span class="k">CREATE</span> (:Decision {verdict: $verdict, reason: $reason, path: $path, chain: $chain})-[:ABOUT]->(n)</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="model">
+    <div class="wrap">
+      <div class="head">
+        <h2>Graph model</h2>
+        <p class="lead">Systems, teams and people are loaded once. Intents, decisions and waits are written while agents work. The lock table and the audit trail are the same graph.</p>
+      </div>
+      <div class="schema-scroll">
+        <svg class="schema" viewBox="0 0 1100 420" role="img" aria-label="Graph model: Human AUTHORIZED Agent, Agent DELEGATED_TO Agent, Intent BY Agent, Decision ABOUT Intent, Decision AUTHORIZED_BY Human, Human CAN_CHANGE Team, Agent SCOPED_TO Env, Intent IMPACTS Resource, Intent WAITS_FOR Intent, Resource DEPENDS_ON Resource, Resource IN Env, Resource OWNED_BY Team, Freeze COVERS Resource.">
+          <defs><marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#667085"/></marker></defs>
+          <g class="rel">
+            <path d="M185 120 H345" marker-end="url(#arr)"/>
+            <path d="M655 120 H495" marker-end="url(#arr)"/>
+            <path d="M935 120 H805" marker-end="url(#arr)"/>
+            <path d="M1010 94 V42 Q1010 30 998 30 H122 Q110 30 110 42 V94" marker-end="url(#arr)"/>
+            <path d="M435 94 C435 56 485 56 485 94" marker-end="url(#arr)"/>
+            <path d="M745 94 C745 56 795 56 795 94" marker-end="url(#arr)"/>
+            <path d="M110 146 V284" marker-end="url(#arr)"/>
+            <path d="M420 146 V284" marker-end="url(#arr)"/>
+            <path d="M730 146 V284" marker-end="url(#arr)"/>
+            <path d="M655 310 H495" marker-end="url(#arr)"/>
+            <path d="M730 336 V380 Q730 392 718 392 H122 Q110 392 110 380 V336" marker-end="url(#arr)"/>
+            <path d="M765 336 C765 376 800 376 800 336" marker-end="url(#arr)"/>
+            <path d="M935 310 H805" marker-end="url(#arr)"/>
+          </g>
+          <g class="rel-lbl">
+            <text x="265" y="111">AUTHORIZED</text>
+            <text x="575" y="111">BY</text>
+            <text x="870" y="111">ABOUT</text>
+            <text x="560" y="34">AUTHORIZED_BY</text>
+            <text x="460" y="50">DELEGATED_TO, WAITS_ON</text>
+            <text x="770" y="50">WAITS_FOR</text>
+            <text x="120" y="219" class="start">CAN_CHANGE</text>
+            <text x="430" y="219" class="start">SCOPED_TO</text>
+            <text x="740" y="219" class="start">IMPACTS {role}</text>
+            <text x="575" y="301">IN</text>
+            <text x="420" y="396">OWNED_BY</text>
+            <text x="812" y="378" class="start">DEPENDS_ON {kind}</text>
+            <text x="870" y="301">COVERS</text>
+          </g>
+          <g class="ent"><rect x="35" y="94" width="150" height="52" rx="8"/><text x="110" y="116">Human</text><text x="110" y="134" class="p">name, teams</text></g>
+          <g class="ent"><rect x="345" y="94" width="150" height="52" rx="8"/><text x="420" y="116">Agent</text><text x="420" y="134" class="p">role, priority, kind</text></g>
+          <g class="ent core"><rect x="655" y="94" width="150" height="52" rx="8"/><text x="730" y="116">Intent</text><text x="730" y="134" class="p">action, mode, status, ttl</text></g>
+          <g class="ent core"><rect x="935" y="94" width="150" height="52" rx="8"/><text x="1010" y="116">Decision</text><text x="1010" y="134" class="p">verdict, reason, path</text></g>
+          <g class="ent"><rect x="35" y="284" width="150" height="52" rx="8"/><text x="110" y="306">Team</text><text x="110" y="324" class="p">name</text></g>
+          <g class="ent"><rect x="345" y="284" width="150" height="52" rx="8"/><text x="420" y="306">Env</text><text x="420" y="324" class="p">prod, staging</text></g>
+          <g class="ent"><rect x="655" y="284" width="150" height="52" rx="8"/><text x="730" y="306">Resource</text><text x="730" y="324" class="p">kind, tier, team</text></g>
+          <g class="ent"><rect x="935" y="284" width="150" height="52" rx="8"/><text x="1010" y="306">Freeze</text><text x="1010" y="324" class="p">active, reason</text></g>
+        </svg>
+      </div>
+      <div class="model-notes">
+        <p><b>Resource</b> is a service, datastore, topic or feature flag. <code>DEPENDS_ON</code> points from the dependent to the dependency, so an impact zone is a reverse walk.</p>
+        <p><b>Intent</b> is one requested change. Its <code>IMPACTS</code> edges are the lock. <code>WAITS_FOR</code> shows its queue. Deadlocks are cycles in <code>WAITS_ON</code>.</p>
+        <p><b>Decision</b> is the audit record: the verdict, the reason, the dependency path and the authority chain.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block soft" id="policies">
+    <div class="wrap">
+      <div class="head">
+        <h2>Policies</h2>
+        <p class="lead">Interlock enforces these outside the agent. A prompt cannot change them.</p>
+      </div>
+      <div class="policies">
+        <div><b>Impact-aware locks</b><span>A change locks its target and its dependents. Unrelated work continues in parallel.</span></div>
+        <div><b>Environment scope</b><span>An agent scoped to staging cannot change prod.</span></div>
+        <div><b>Human authority</b><span>Each agent, including sub-agents, must trace back to a human who can change the owning team's resources.</span></div>
+        <div><b>Freezes</b><span>A code freeze stops changes at the lock.</span></div>
+        <div><b>Sign-off</b><span>Deletes in prod, payment database migrations and very wide changes wait for a human.</span></div>
+        <div><b>Incidents, deadlocks, crashes</b><span>Incident fixes go first. Interlock breaks wait cycles. A crashed agent's lease expires.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="integrate">
+    <div class="wrap">
+      <div class="head">
+        <h2>Connecting your agents</h2>
+        <p class="lead">Any agent that can call a tool can use Interlock: Claude Code, Cursor or your own workers, over MCP or HTTP.</p>
+      </div>
+      <div class="split">
+        <pre class="code"><span class="c"># Claude Code: add Interlock as an MCP server</span>
+claude mcp add interlock \
+  -e INTERLOCK_URL=https://your-interlock \
+  -e INTERLOCK_AGENT=claude-code \
+  -- python -m interlock.mcp_server
+
+<span class="c"># tools the agent gets</span>
+request_change  heartbeat  release
+why_blocked     status     list_resources</pre>
+        <pre class="code"><span class="c"># plain HTTP, from any worker</span>
+curl -X POST $INTERLOCK/api/request \
+  -H 'Content-Type: application/json' \
+  -d '{"agent": "deploy-bot", "action": "deploy",
+       "target": "payments@prod", "reason": "v2.4"}'
+
+<span class="c"># renew the lease while working, release when done</span>
+curl -X POST $INTERLOCK/api/heartbeat -d '{"intent": "int-..."}'
+curl -X POST $INTERLOCK/api/release   -d '{"intent": "int-..."}'</pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="wrap">
+      <div><h2>Open the console</h2><p>See every agent, change, approval and decision, with the Cypher behind each one.</p></div>
+      <a class="btn" href="/console">Open the console</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Interlock. Built on FalkorDB for Graph Hacks 2026. The company and its agents are simulated.</span>
+    <span><a href="https://github.com/piyushk-dev/interlock">Source on GitHub</a></span>
+  </div>
+</footer>
+<script src="/site.js"></script>
+</body>
+</html>
