@@ -339,8 +339,10 @@ def join():
     lst = BUILD / "all.txt"
     lst.write_text("".join(f"file '{(BUILD / f'{sid}.mp4').as_posix()}'\n" for sid, _ in ORDER), encoding="utf-8")
     out = OUT / "interlock-demo.mp4"
+    # one loudness pass so clips from different TTS runs sit at the same level without clipping
     subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(lst),
-                    "-c", "copy", "-movflags", "+faststart", str(out)], check=True)
+                    "-c:v", "copy", "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", "48000", "-c:a", "aac", "-b:a", "160k",
+                    "-movflags", "+faststart", str(out)], check=True)
     print("wrote", out)
 
 
