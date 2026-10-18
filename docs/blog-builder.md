@@ -47,7 +47,7 @@ Two agents, two green ticks. Both did exactly what they were asked. But the migr
 
 He rolls both back. Forty minutes later checkout is green again. The next day, security asks who approved the migration. The honest answer is that nobody did. The agent had a token, and the token had permission. Permission is not approval.
 
-![Both changes reach checkout](https://raw.githubusercontent.com/piyushk-dev/interlock/main/docs/screens/ex-step3.png)
+[INSERT IMAGE HERE: ex-step3.png (caption: Both changes reach checkout)]
 
 That was the moment it clicked for me. "Can this change run now?" is not a question about one service. It is a question about a graph: the target, everything that depends on it, every other change touching those things, the team that owns them, and the human behind the agent.
 
@@ -59,7 +59,7 @@ The idea fits in one sentence: an agent asks Interlock before it acts.
 
 It asks over MCP or plain HTTP, and it gets one of four answers: **granted**, **waiting**, **needs approval** or **denied**. Every answer is written into the graph before the agent acts. So the lock table, the rules and the audit trail all live in one FalkorDB graph.
 
-![Interlock graph model](https://raw.githubusercontent.com/piyushk-dev/interlock/main/docs/screens/graph-model.png)
+[INSERT IMAGE HERE: graph-model.png (caption: Interlock graph model)]
 
 The first query I wrote finds the blast radius. A change to `orders-db` hurts more than `orders-db`; it hurts everything that depends on it. So Interlock walks the dependency edges backwards from the target, one to three hops depending on the action:
 
@@ -99,7 +99,7 @@ To show any of this, I needed agents. So I built a fake online store (40 product
 
 The first time I turned enforcement off, the map went red in about four seconds. Cards flashing, collisions stacking up in the feed. I laughed out loud at 2 a.m., alone, which tells you something about hackathons.
 
-![Interlock console with 24 agents](https://raw.githubusercontent.com/piyushk-dev/interlock/main/docs/screens/live-desktop.png)
+[INSERT IMAGE HERE: live-desktop.png (caption: Interlock console with 24 agents)]
 
 Then I measured it properly: same fleet, same random seed, 180 simulated seconds.
 
@@ -123,7 +123,7 @@ Without coordination, the fleet looks twice as busy. Most of that work collides.
 
 **The video voice kept changing accents.** I generated the narration clip by clip. Halfway through, I hit the free quota on one text-to-speech model and finished on another. Each clip sounded like a different person. I threw the whole thing away and regenerated every line with one Indian English voice from Sarvam's Bulbul v3. The lesson cost me an hour: one voice, one model, one setting, or nothing.
 
-![Every decision explains itself](https://raw.githubusercontent.com/piyushk-dev/interlock/main/docs/screens/card-desktop.png)
+[INSERT IMAGE HERE: card-desktop.png (caption: Every decision explains itself)]
 
 ## Sunday afternoon: shipping it on AWS
 
