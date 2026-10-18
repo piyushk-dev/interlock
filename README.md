@@ -5,7 +5,7 @@ Interlock coordinates AI agents that change production. An agent asks Interlock 
 ![Interlock product page with the live dependency map](docs/screens/site-desktop-top.png)
 
 - **Live demo:** https://43.204.238.218.sslip.io (console at [/console](https://43.204.238.218.sslip.io/console))
-- **Demo video:** [interlock-demo.mp4](https://github.com/piyushk-dev/interlock/releases/download/v1.0/interlock-demo.mp4) (3:33, 1080p, narrated, from the [v1.0 release](https://github.com/piyushk-dev/interlock/releases/tag/v1.0))
+- **Demo video:** [interlock-demo.mp4](https://github.com/piyushk-dev/interlock/releases/download/v1.0/interlock-demo.mp4) (3:09, 1080p, narrated, from the [v1.0 release](https://github.com/piyushk-dev/interlock/releases/tag/v1.0))
 - **Tracks:** Agent Memory and Coordination (main), Agents That Act on Connected Data
 - **Built for:** Graph Hacks (WeMakeDevs x FalkorDB), 15 to 18 October 2026
 - **Data:** a synthetic company, "Acme Commerce". No real systems are changed.
@@ -300,4 +300,4 @@ scripts/         bench.py (the benchmark) and shots.py (screenshots)
 
 ## AI assistance
 
-This project was built with Claude Code (Anthropic's Claude) as a coding assistant: research on Reddit discussions, the code, the UI, the demo video and this README. The video narration is generated with Google Gemini text-to-speech (`video/tts.py`), and the video is recorded from the running app with Playwright and joined with ffmpeg (`video/record.py`). The author chose the idea, directed the design and reviewed the results.
+This project was built with Claude Code (Anthropic's Claude) as a coding assistant: research on Reddit discussions, the code, the UI, the demo video and this README. The video narration is generated with Sarvam Bulbul v3 text-to-speech in an Indian English voice (`video/tts_sarvam.py`), and the video is recorded from the running app with Playwright and joined with ffmpeg (`video/record.py`). The author chose the idea, directed the design and reviewed the results.

@@ -59,4 +59,4 @@ Each policy reads like the sentence it enforces, and each one is one query. The 
 
 ## AI assistance disclosure
 
-Built with Claude Code (Anthropic's Claude) as a coding assistant for research, code, UI and documentation. The video narration uses Google Gemini text-to-speech. The author chose the idea, directed the design and reviewed the results.
+Built with Claude Code (Anthropic's Claude) as a coding assistant for research, code, UI and documentation. The video narration uses Sarvam Bulbul v3 text-to-speech (Indian English voice). The author chose the idea, directed the design and reviewed the results.
