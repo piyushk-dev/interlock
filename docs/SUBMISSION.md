@@ -50,12 +50,13 @@ FalkorDB holds all of Interlock's state: 80 resources (services, datastores, top
 
 ## What did you like about FalkorDB?
 
-Each policy reads like the sentence it enforces, and each one is one query. The atomic write query made the core of a lock manager a single statement instead of a transaction protocol. Variable-length paths, shortestPath and pattern comprehensions covered every check without a separate analytics stack, and the queries run fast enough to sit in front of every agent action.
+Each write query is atomic, so the core of a lock manager (check for conflicts, then grant) is one Cypher statement instead of a transaction protocol. Each policy reads like the sentence it enforces: "a human authorised this agent, directly or through up to three sub-agents" is (h:Human)-[:AUTHORIZED]->(:Agent)-[:DELEGATED_TO*0..3]->(a). Variable-length paths, shortestPath and pattern comprehensions covered every check without a separate analytics stack, and the queries are fast enough to sit in front of every agent action. It runs as a Redis module, so when Docker failed on my laptop I ran it natively in WSL in a few minutes.
 
 ## What improvements would you like to see in FalkorDB?
 
-- Multi-statement transactions, so a policy check and the grant that depends on it could run as one unit without an application-level lock.
-- Node filters for path procedures, for example a shortest path that avoids nodes with a given property.
+- Interactive transactions: read, decide in application code, then write, as one atomic unit. MULTI/EXEC can batch queries but cannot branch on a result, so I serialise multi-query workflows with an application lock.
+- Parameters in variable-length bounds. [:DEPENDS_ON*1..$depth] is not allowed, so the impact-zone query formats the depth into the query string, which defeats query caching.
+- A built-in cycle-detection procedure that returns one cycle quickly. I use a variable-length path back to the start node, which is fine at this size but would not scale to thousands of agents.
 
 ## AI assistance disclosure
 
